@@ -21,23 +21,23 @@ syntax Question
 // Think about disambiguation using priorities and associativity
 // and use C/Java style precedence rules (look it up on the internet)
 syntax Expr 
-  = left "(" Expr ")"
-  > right "!" Expr
-  > left Expr "*" Expr
-  | left Expr "/" Expr 
-  > left Expr "+" Expr
-  | left Expr "-" Expr
-  > left Expr "\<" Expr
-  | left Expr "\<=" Expr
-  | left Expr "\>" Expr
-  | left Expr "\>=" Expr
-  > left Expr "==" Expr
-  | left Expr "!=" Expr
+  = "(" Expr ")"
+  >  "!" Expr
+  > left (Expr "*" Expr
+        | Expr "/" Expr) 
+  > left (Expr "+" Expr
+        | Expr "-" Expr)
+  > left (Expr "\<" Expr
+        | Expr "\<=" Expr
+        | Expr "\>" Expr
+        | Expr "\>=" Expr)
+  > left (Expr "==" Expr
+        | Expr "!=" Expr)
   > left Expr "&&" Expr
   > left Expr "||" Expr
-  | "(" (Bool | Int | Str) ")"
-  | Bool //does this belong to Expr?
+  > Bool
   | Int
+  | Str
   | Id var \ "true" \ "false" // true/false are reserved keywords.
   ;
   
