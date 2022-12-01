@@ -11,23 +11,49 @@ start syntax Form
   = "form" Id name "{" Question* questions "}"; 
 
 // TODO: question, computed question, block, if-then-else, if-then
-syntax Question = ;
+syntax Question 
+  = "if" "(" Expr ")" "{" Question* ifQuestions "}" "else" "{" Question* elseQuestions "}"
+  | "if" "(" Expr ")" "{" Question* ifQuestions "}"
+  | Str question Id var ":" Type "=" Expr
+  | Str question Id var ":" Type;
 
 // TODO: +, -, *, /, &&, ||, !, >, <, <=, >=, ==, !=, literals (bool, int, str)
 // Think about disambiguation using priorities and associativity
 // and use C/Java style precedence rules (look it up on the internet)
 syntax Expr 
-  = Id \ "true" \ "false" // true/false are reserved keywords.
+  = left "(" Expr ")"
+  > right "!" Expr
+  > left Expr "*" Expr
+  | left Expr "/" Expr 
+  > left Expr "+" Expr
+  | left Expr "-" Expr
+  > left Expr "\<" Expr
+  | left Expr "\<=" Expr
+  | left Expr "\>" Expr
+  | left Expr "\>=" Expr
+  > left Expr "==" Expr
+  | left Expr "!=" Expr
+  > left Expr "&&" Expr
+  > left Expr "||" Expr
+  | "(" (Bool | Int | Str) ")"
+  | Bool //does this belong to Expr?
+  | Int
+  | Id var \ "true" \ "false" // true/false are reserved keywords.
   ;
   
-syntax Type = ;
+syntax Type 
+= "integer"
+| "boolean"
+| "string";
 
-lexical Str = ;
+lexical Str = [\"][a-zA-Z0-9?~!@#$%€^&*()_\-+=:;.,/ \ ]+[\"];
 
 lexical Int 
-  = ;
+  = [\-]?[0-9]+;
 
-lexical Bool = ;
+lexical Bool 
+= "true"
+| "false";
 
 
 
