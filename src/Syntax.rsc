@@ -14,8 +14,8 @@ start syntax Form
 syntax Question 
   = "if" "(" Expr ")" "{" Question* ifQuestions "}" "else" "{" Question* elseQuestions "}"
   | "if" "(" Expr ")" "{" Question* ifQuestions "}"
-  | Str question Id var ":" Type "=" Expr
-  | Str question Id var ":" Type;
+  | Str question Id var ":" Type resType "=" Expr computation
+  | Str question Id var ":" Type resType;
 
 // TODO: +, -, *, /, &&, ||, !, >, <, <=, >=, ==, !=, literals (bool, int, str)
 // Think about disambiguation using priorities and associativity
