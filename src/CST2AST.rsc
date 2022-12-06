@@ -55,19 +55,23 @@ AExpr cst2ast(Expr e) {
     case (Expr)`<Expr lhs> != <Expr rhs>`: return neq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
     case (Expr)`<Expr lhs> && <Expr rhs>`: return and(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
     case (Expr)`<Expr lhs> || <Expr rhs>`: return or(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
-    case (Expr)`<Bool b>`: return boolean(fromString("<b>"), src=b.src);
-    case (Expr)`<Int i>`: return integer(toInt("<i>"), src=i.src);
-    case (Expr)`<Str s>`: return string("<s>", src=s.src);
+    case (Expr)`<Bool b>`: return boolLit(fromString("<b>"), src=b.src);
+    case (Expr)`<Int i>`: return intLit(toInt("<i>"), src=i.src);
+    case (Expr)`<Str s>`: return strLit("<s>", src=s.src);
     case (Expr)`<Id x>`: return ref(cst2ast(x), src=x.src);
     default: throw "Unhandled expression: <e>";
   }
 }
 
 default AType cst2ast(Type t) {
-  throw "Not yet implemented <t>";
+  switch(t) {
+    case "integer": return integer();
+    case "boolean": return boolean();
+    case "string": return string();
+    default: throw "Unhandled type: <t>";  
+  }
 }
 
-//new
 default AId cst2ast(Id x) {
   return id("<x>", src=x.src);
 }

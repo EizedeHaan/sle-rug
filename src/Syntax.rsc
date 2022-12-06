@@ -38,7 +38,7 @@ syntax Expr
   > Bool
   | Int
   | Str
-  | Id var \ "true" \ "false" // true/false are reserved keywords.
+  | Id var \ Keywords // Keywords contains reserved keywords.
   ;
   
 syntax Type 
@@ -55,5 +55,11 @@ lexical Bool
 = "true"
 | "false";
 
+keyword Keywords
+  = "true"
+  | "false"
+  | "integer"
+  | "boolean"
+  | "string";
 
 

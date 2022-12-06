@@ -33,9 +33,9 @@ data AExpr(loc src = |tmp:///|)
   | neq(AExpr lhs, AExpr rhs)
   | and(AExpr lhs, AExpr rhs)
   | or(AExpr lhs, AExpr rhs)
-  | boolean(bool b)
-  | integer(int i)
-  | string(str s)
+  | boolLit(bool b)
+  | intLit(int i)
+  | strLit(str s)
   | ref(AId id)
   ;
 
@@ -44,4 +44,6 @@ data AId(loc src = |tmp:///|)
   = id(str name);
 
 data AType(loc src = |tmp:///|)
-  = typ(str typ);
+  = integer()
+  | boolean()
+  | string();
