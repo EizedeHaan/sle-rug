@@ -3,6 +3,9 @@ module CST2AST
 import Syntax;
 import AST;
 
+import String;
+import Boolean;
+import Location;
 import ParseTree;
 
 /*
@@ -33,15 +36,29 @@ AQuestion cst2ast(q:(Question)`<Str question> <Id var> : <Type resType> = <Expr 
 }
 
 default AQuestion cst2ast(Question q) {
-  //throw "Not yet implemented <q>";
   return Q("<q.question>", cst2ast(q.var), cst2ast(q.resType), src=q.src);
 }
 
 AExpr cst2ast(Expr e) {
   switch (e) {
-    case (Expr)`<Id x>`: return ref(id("<x>", src=x.src), src=x.src);
-    // etc.
-    
+    case (Expr)`( <Expr expr> )`: return parenthesis(cst2ast(expr), src=expr.src);
+    case (Expr)`! <Expr expr>`: return not(cst2ast(expr), src=expr.src);
+    case (Expr)`<Expr lhs> * <Expr rhs>`: return mul(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> / <Expr rhs>`: return div(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> + <Expr rhs>`: return add(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> - <Expr rhs>`: return sub(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> \< <Expr rhs>`: return less(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> \<= <Expr rhs>`: return leq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> \> <Expr rhs>`: return greater(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> \>= <Expr rhs>`: return greq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> == <Expr rhs>`: return eq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> != <Expr rhs>`: return neq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> && <Expr rhs>`: return and(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> || <Expr rhs>`: return or(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Bool b>`: return boolean(fromString("<b>"), src=b.src);
+    case (Expr)`<Int i>`: return integer(toInt("<i>"), src=i.src);
+    case (Expr)`<Str s>`: return string("<s>", src=s.src);
+    case (Expr)`<Id x>`: return ref(cst2ast(x), src=x.src);
     default: throw "Unhandled expression: <e>";
   }
 }
