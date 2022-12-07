@@ -26,9 +26,10 @@ RefGraph resolve(AForm f) = <us, ds, us o ds>
   when Use us := uses(f), Def ds := defs(f);
 
 Use uses(AForm f) {
-  return {}; 
+  return {<var.src, var.name> | /ref(AId var) := f}; 
 }
 
 Def defs(AForm f) {
-  return {}; 
+  return {<var.name, var.src> | /computedQ(str _, AId var, AType _, AExpr _) := f}
+      +  {<var.name, var.src> | /Q(str _, AId var, AType _) := f}; 
 }
