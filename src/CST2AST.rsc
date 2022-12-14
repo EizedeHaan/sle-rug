@@ -64,7 +64,7 @@ AExpr cst2ast(Expr e) {
 }
 
 default AType cst2ast(Type t) {
-  switch(t) {
+  switch("<t>") {
     case "integer": return integer();
     case "boolean": return boolean();
     case "string": return string();
