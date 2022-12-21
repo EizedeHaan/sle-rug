@@ -40,7 +40,11 @@ TEnv collect(AForm f) {
 }
 
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
-  return {}; 
+  set[Message] msgs = {};
+  for(AQuestion q <- f.questions) {
+    msgs += check(q, tenv, useDef);
+  };
+  return msgs; 
 }
 
 // - produce an error if there are declared questions with the same name but different types.
@@ -48,6 +52,24 @@ set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
 // - the declared type computed questions should match the type of the expression.
 set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
+
+  switch(q) {
+    case computedQ(str question, AId var, AType typ, AExpr expr): {
+      msgs += {error("Question declared with different types", q.src)
+        | <loc d, "<var>", str _, Type t2> <- tenv, d != q.src, typ != t2};
+
+      msgs += {warning("Multiple questions with the same prompt", q.src)
+        | <loc d, _, question, _> <- tenv, d != q.src};
+      }
+      
+    case Q(str question, AId var, AType typ): {
+      msgs += {error("Question declared with different types", q.src)
+        | <loc d, "<var>", str _, Type t2> <- tenv, d != q.src, typ != t2};
+
+      msgs += {warning("Multiple questions with the same prompt", q.src)
+        | <loc d, _, question, _> <- tenv, d != q.src};
+      }
+  }
 
   msgs += {error("Question declared with different types", d)
     | <loc d, str name, str _, Type t1> <- tenv,
@@ -69,6 +91,132 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
     case ref(AId x):
       msgs += { error("Undeclared question", x.src) | useDef[x.src] == {} };
 
+    case not(AExpr expr): {
+      if (typeOf(expr,tenv,useDef) != tbool()) {
+        msgs += { error("Incompatible operand: must be boolean", expr.src)};
+      }
+      msgs += check(expr,tenv,useDef);
+    }
+    case mul(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case div(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case add(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case sub(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case less(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case leq(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case greater(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case greq(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case eq(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case neq(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tint()) {
+        msgs += { error("Incompatible operand: must be integer", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case and(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tbool()) {
+        msgs += { error("Incompatible operand: must be boolean", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tbool()) {
+        msgs += { error("Incompatible operand: must be boolean", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
+    case or(AExpr lhs, AExpr rhs): {
+      if (typeOf(lhs,tenv,useDef) != tbool()) {
+        msgs += { error("Incompatible operand: must be boolean", lhs.src)};
+      }
+      if (typeOf(rhs,tenv,useDef) != tbool()) {
+        msgs += { error("Incompatible operand: must be boolean", rhs.src)};
+      }
+      msgs += check(lhs,tenv,useDef);
+      msgs += check(rhs,tenv,useDef);
+    }
     // etc.
   }
   
@@ -81,7 +229,24 @@ Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
       if (<u, loc d> <- useDef, <d, x, _, Type t> <- tenv) {
         return t;
       }
-    // etc.
+    case strLit(_): return tstr();
+    case intLit(_): return tint();
+    case boolLit(_): return tbool();
+    case parenthesis(AExpr expr): return typeOf(expr, tenv, useDef);
+    case not(AExpr _): return tbool();
+    case mul(AExpr _, AExpr _): return tint();
+    case div(AExpr _, AExpr _): return tint();
+    case add(AExpr _, AExpr _): return tint();
+    case sub(AExpr _, AExpr _): return tint();
+    case less(AExpr _, AExpr _): return tbool();
+    case leq(AExpr _, AExpr _): return tbool();
+    case greater(AExpr _, AExpr _): return tbool();
+    case greq(AExpr _, AExpr _): return tbool();
+    case eq(AExpr _, AExpr _): return tbool();
+    case neq(AExpr _, AExpr _): return tbool();
+    case and(AExpr _, AExpr _): return tbool();
+    case or(AExpr _, AExpr _): return tbool();
+    default: return tunknown();
   }
   return tunknown(); 
 }
