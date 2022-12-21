@@ -3,6 +3,7 @@ module Check
 import AST;
 import Resolve;
 import Message; // see standard library
+import Location;
 
 data Type
   = tint()
@@ -10,6 +11,15 @@ data Type
   | tstr()
   | tunknown()
   ;
+
+Type convertAType(AType t) {
+  switch(t) {
+    case integer(): return tint();
+    case boolean(): return tbool();
+    case string(): return tstr();
+    default: return tunknown();
+  }
+}
 
 // the type environment consisting of defined questions in the form 
 alias TEnv = rel[loc def, str name, str label, Type \type];
@@ -19,22 +29,22 @@ alias TEnv = rel[loc def, str name, str label, Type \type];
 TEnv collect(AForm f) {
   TEnv env = {};
   visit(f) {
-    case Q(str question, AId var, integer()): 
-      env + {<var.src, var.name, question, tint()>};
-    case Q(str question, AId var, boolean()): 
-      env + {<var.src, var.name, question, tbool()>};
-    case Q(str question, AId var, string()): 
-      env + {<var.src, var.name, question, tstr()>};
-    case Q(str question, AId var, AType _): 
-      env + {<var.src, var.name, question, tunknown()>};
-    case computedQ(str question, AId var, integer(), AExpr _): 
-      env + {<var.src, var.name, question, tint()>};
-    case computedQ(str question, AId var, boolean(), AExpr _): 
-      env + {<var.src, var.name, question, tbool()>};
-    case computedQ(str question, AId var, string(), AExpr _): 
-      env + {<var.src, var.name, question, tstr()>};
-    case computedQ(str question, AId var, AType _, AExpr _): 
-      env + {<var.src, var.name, question, tunknown()>};
+    case q:Q(str question, AId var, integer()): 
+      env + {<q.src, var.name, question, tint()>};
+    case q:Q(str question, AId var, boolean()): 
+      env + {<q.src, var.name, question, tbool()>};
+    case q:Q(str question, AId var, string()): 
+      env + {<q.src, var.name, question, tstr()>};
+    case q:Q(str question, AId var, AType _): 
+      env + {<q.src, var.name, question, tunknown()>};
+    case q:computedQ(str question, AId var, integer(), AExpr _): 
+      env + {<q.src, var.name, question, tint()>};
+    case q:computedQ(str question, AId var, boolean(), AExpr _): 
+      env + {<q.src, var.name, question, tbool()>};
+    case q:computedQ(str question, AId var, string(), AExpr _): 
+      env + {<q.src, var.name, question, tstr()>};
+    case q:computedQ(str question, AId var, AType _, AExpr _): 
+      env + {<q.src, var.name, question, tunknown()>};
   }
   return env; 
 }
@@ -54,30 +64,56 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
 
   switch(q) {
+    case ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions): {
+      msgs += {error("Condition not boolean", condition.src) | typeOf(condition,tenv,useDef) != tbool()};
+
+      for(AQuestion ieq <- ifQuestions + elseQuestions) {
+        msgs += check(ieq,tenv,useDef);
+      }
+    }
+
+    case ifQ(AExpr condition, list[AQuestion] ifQuestions):{
+      msgs += {error("Condition not boolean", condition.src) | typeOf(condition,tenv,useDef) != tbool()};
+
+      for(AQuestion iq <- ifQuestions) {
+        msgs += check(iq,tenv,useDef);
+      } 
+    }
+
     case computedQ(str question, AId var, AType typ, AExpr expr): {
       msgs += {error("Question declared with different types", q.src)
-        | <loc d, "<var>", str _, Type t2> <- tenv, d != q.src, typ != t2};
+        | <loc d, "<var>", str _, Type t2> <- tenv, d != q.src, convertAType(typ) != t2};
 
       msgs += {warning("Multiple questions with the same prompt", q.src)
         | <loc d, _, question, _> <- tenv, d != q.src};
-      }
+
+      msgs += {warning("Different prompts used on the same variable", q.src)
+        | <loc d, "<var>", str prompt, _> <- tenv, d != q.src, prompt != question};
+
+      msgs += {error("Expression does not match variable type.", cover([var.src, expr.src]))
+        | typeOf(expr,tenv,useDef) != convertAType(typ)};
+      msgs += check(expr,tenv,useDef);
+    }
       
     case Q(str question, AId var, AType typ): {
       msgs += {error("Question declared with different types", q.src)
-        | <loc d, "<var>", str _, Type t2> <- tenv, d != q.src, typ != t2};
+        | <loc d, "<var>", str _, Type t2> <- tenv, d != q.src, convertAType(typ) != t2};
 
       msgs += {warning("Multiple questions with the same prompt", q.src)
         | <loc d, _, question, _> <- tenv, d != q.src};
-      }
+
+      msgs += {warning("Different prompts used on the same variable", q.src)
+        | <loc d, "<var>", str prompt, _> <- tenv, d != q.src, prompt != question};
+    }
   }
 
-  msgs += {error("Question declared with different types", d)
-    | <loc d, str name, str _, Type t1> <- tenv,
-      <loc _, name, str _, Type t2> <- tenv, t1 != t2};
+  // msgs += {error("Question declared with different types", d)
+  //   | <loc d, str name, str _, Type t1> <- tenv,
+  //     <loc _, name, str _, Type t2> <- tenv, t1 != t2};
 
-  msgs += {warning("Multiple questions with the same prompt", d1)
-    | <loc d1, _, str q, _> <- tenv,
-      <loc d2, _, q, _> <- tenv, d1 != d2};
+  // msgs += {warning("Multiple questions with the same prompt", d1)
+  //   | <loc d1, _, str q, _> <- tenv,
+  //     <loc d2, _, q, _> <- tenv, d1 != d2};
   return msgs; 
 }
 
