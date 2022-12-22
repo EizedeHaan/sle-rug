@@ -30,21 +30,21 @@ TEnv collect(AForm f) {
   TEnv env = {};
   visit(f) {
     case q:Q(str question, AId var, integer()): 
-      env + {<q.src, var.name, question, tint()>};
+      env += {<q.src, var.name, question, tint()>};
     case q:Q(str question, AId var, boolean()): 
-      env + {<q.src, var.name, question, tbool()>};
+      env += {<q.src, var.name, question, tbool()>};
     case q:Q(str question, AId var, string()): 
-      env + {<q.src, var.name, question, tstr()>};
+      env += {<q.src, var.name, question, tstr()>};
     case q:Q(str question, AId var, AType _): 
-      env + {<q.src, var.name, question, tunknown()>};
+      env += {<q.src, var.name, question, tunknown()>};
     case q:computedQ(str question, AId var, integer(), AExpr _): 
-      env + {<q.src, var.name, question, tint()>};
+      env += {<q.src, var.name, question, tint()>};
     case q:computedQ(str question, AId var, boolean(), AExpr _): 
-      env + {<q.src, var.name, question, tbool()>};
+      env += {<q.src, var.name, question, tbool()>};
     case q:computedQ(str question, AId var, string(), AExpr _): 
-      env + {<q.src, var.name, question, tstr()>};
+      env += {<q.src, var.name, question, tstr()>};
     case q:computedQ(str question, AId var, AType _, AExpr _): 
-      env + {<q.src, var.name, question, tunknown()>};
+      env += {<q.src, var.name, question, tunknown()>};
   }
   return env; 
 }
@@ -66,6 +66,7 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
   switch(q) {
     case ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions): {
       msgs += {error("Condition not boolean", condition.src) | typeOf(condition,tenv,useDef) != tbool()};
+      msgs += check(condition,tenv,useDef);
 
       for(AQuestion ieq <- ifQuestions + elseQuestions) {
         msgs += check(ieq,tenv,useDef);
@@ -74,6 +75,7 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
 
     case ifQ(AExpr condition, list[AQuestion] ifQuestions):{
       msgs += {error("Condition not boolean", condition.src) | typeOf(condition,tenv,useDef) != tbool()};
+      msgs += check(condition,tenv,useDef);
 
       for(AQuestion iq <- ifQuestions) {
         msgs += check(iq,tenv,useDef);
