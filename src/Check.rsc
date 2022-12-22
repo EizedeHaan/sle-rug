@@ -126,8 +126,11 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   
   switch (e) {
-    case ref(AId x):
+    case ref(AId x, src = loc u): {
       msgs += { error("Undeclared question", x.src) | useDef[x.src] == {} };
+      msgs += { error("Question/variable used before declaration", x.src)
+        | <u, loc d> <- useDef, beginsBefore(x.src, d)};
+    }
 
     case not(AExpr expr): {
       if (typeOf(expr,tenv,useDef) != tbool()) {
