@@ -33,6 +33,8 @@ VEnv initialEnv(AForm f) {
       +  (var.name : vint(0) | /computedQ(str _, AId var, integer(), AExpr _) := f)
       +  (var.name : vbool(false) | /computedQ(str _, AId var, boolean(), AExpr _) := f)
       +  (var.name : vstr("") | /computedQ(str _, AId var, string(), AExpr _) := f)
+      +  ("<condition>" : vbool(false) | /ifElseQ(AExpr condition, _, _) := f)
+      +  ("<condition>" : vbool(false) | /ifQ(AExpr condition, _) := f)
     ;
 }
 
@@ -58,8 +60,8 @@ VEnv eval(AQuestion q, Input inp, VEnv venv) {
     //ifElseQ
   // evaluate inp and computed questions to return updated VEnv
   switch (q) {
-    case ifQ(AExpr condition, list[AQuestion] ifQuestions): ;
-    case ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions):;
+    case ifQ(AExpr condition, _): venv["<condition>"] = eval(condition, venv);
+    case ifElseQ(AExpr condition, _, _): venv["<condition>"] = eval(condition, venv);
     case computedQ(_, AId var, _, AExpr expr): venv[var.name] = eval(expr, venv);
     case Q( _, AId var, _):
       if(inp.question == var.name) venv[var.name] = inp.\value;
