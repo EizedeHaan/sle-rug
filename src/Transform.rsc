@@ -29,7 +29,27 @@ import AST;
  */
  
 AForm flatten(AForm f) {
-  return f; 
+  list[AQuestion] qs = flatten(f.questions, boolLit(true));  
+  return form(f.name, qs); 
+}
+
+list[AQuestion] flatten(list[AQuestion] qs, AExpr currentCondition) {
+  list[AQuestion] result = [];
+  for(q <- qs) {
+    switch (q) {
+      case ifQ(AExpr condition, list[AQuestion] ifQuestions): 
+        result += flatten(ifQuestions, and(currentCondition, parenthesis(condition)));
+      case ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions): {
+        result += flatten(ifQuestions, and(currentCondition, parenthesis(condition)));
+        result += flatten(elseQuestions, and(currentCondition, not(parenthesis(condition))));
+      }
+      case computedQ(_, _, _, _): 
+        result += ifQ(currentCondition, [q]);
+      case Q( _, _, _):
+        result += ifQ(currentCondition, [q]);
+    }
+  }
+  return result;
 }
 
 /* Rename refactoring:

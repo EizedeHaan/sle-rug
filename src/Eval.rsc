@@ -60,9 +60,17 @@ VEnv eval(AQuestion q, Input inp, VEnv venv) {
     //ifElseQ
   // evaluate inp and computed questions to return updated VEnv
   switch (q) {
-    case ifQ(AExpr condition, _): venv["<condition>"] = eval(condition, venv);
-    case ifElseQ(AExpr condition, _, _): venv["<condition>"] = eval(condition, venv);
-    case computedQ(_, AId var, _, AExpr expr): venv[var.name] = eval(expr, venv);
+    case ifQ(AExpr condition, list[AQuestion] ifQuestions): {
+      venv["<condition>"] = eval(condition, venv);
+      venv = evalOnce(form("",ifQuestions), inp, venv);//bit of a trick
+    }
+    case ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions): {
+      venv["<condition>"] = eval(condition, venv);
+      venv = evalOnce(form("",ifQuestions), inp, venv);
+      venv = evalOnce(form("",elseQuestions), inp, venv);
+    }
+    case computedQ(_, AId var, _, AExpr expr): 
+      venv[var.name] = eval(expr, venv);
     case Q( _, AId var, _):
       if(inp.question == var.name) venv[var.name] = inp.\value;
   }
