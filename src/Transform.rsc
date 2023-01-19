@@ -60,7 +60,22 @@ list[AQuestion] flatten(list[AQuestion] qs, AExpr currentCondition) {
  */
  
 start[Form] rename(start[Form] f, loc useOrDef, str newName, UseDef useDef) {
-   return f; 
+  set[loc] toRename = {};
+  if(useOrDef in useDef<1>) {
+    //we have a definition
+    toRename += {useOrDef};
+    toRename += { u | <u, useOrDef> <- useDef};
+  }else if(useOrDef in useDef<0>) {
+    //we have a use occurrence
+    toRename += { u | <u, useOrDef> <- useDef};
+    toRename += { d | <useOrDef, d> <- useDef};
+  }else {
+    return f;
+  }
+  return visit(f) {
+    case Id x => [Id]newName
+      when x.src in toRename
+  }
 } 
  
  
