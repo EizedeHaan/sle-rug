@@ -3,6 +3,7 @@ module Transform
 import Syntax;
 import Resolve;
 import AST;
+import ParseTree;
 
 /* 
  * Transforming QL forms
@@ -67,8 +68,10 @@ start[Form] rename(start[Form] f, loc useOrDef, str newName, UseDef useDef) {
     toRename += { u | <u, useOrDef> <- useDef};
   }else if(useOrDef in useDef<0>) {
     //we have a use occurrence
-    toRename += { u | <u, useOrDef> <- useDef};
-    toRename += { d | <useOrDef, d> <- useDef};
+    if(<useOrDef, loc d> <- useDef) {
+      toRename += {d};
+      toRename += { u | <u, d> <- useDef};
+    }
   }else {
     return f;
   }
