@@ -25,7 +25,70 @@ void compile(AForm f) {
 }
 
 HTMLElement form2html(AForm f) {
-  return html([]);
+  return html([
+    head([
+      title([text(f.name)])
+      ]),
+    body([
+      h2([text(f.name)]),
+      form([])
+    ])
+  ]);
+}
+
+/*Normal questions*/
+list[HTMLElement] question2html(Q(str question, AId var, integer())) {
+  return [label([text(question)], \for = var.name), br(),
+          input(\type = "number", id = var.name, name = var.name), br()];
+}
+
+list[HTMLElement] question2html(Q(str question, AId var, boolean())) {
+  return [label([text(question)]), br(),
+          label([\text("True")]), input(\type = "radio", id = var.name, name = var.name, \value = "true"), br(),
+          label([\text("False")]), input(\type = "radio", id = var.name, name = var.name, \value = "false"), br()];
+}
+
+list[HTMLElement] question2html(Q(str question, AId var, string())) {
+  return [label([text(question)], \for = var.name), br(),
+          input(\type = "text", id = var.name, name = var.name), br()];
+}
+
+/*Computed questions*/
+list[HTMLElement] question2html(computedQ(str question, AId var, integer(), AExpr e)) {
+  return [label([text(question)], \for = var.name), br(),
+          input(\type = "number", id = var.name, name = var.name, readonly = "true"), br()];
+}
+
+list[HTMLElement] question2html(computedQ(str question, AId var, boolean(), AExpr e)) {
+  return [label([text(question)]), br(),
+          label([\text("True")]), input(\type = "radio", id = var.name, name = var.name, \value = "true", readonly = "true"), br(),
+          label([\text("False")]), input(\type = "radio", id = var.name, name = var.name, \value = "false", readonly = "true"), br()];
+}
+
+list[HTMLElement] question2html(computedQ(str question, AId var, string(), AExpr e)) {
+  return [label([text(question)], \for = var.name), br(),
+          input(\type = "text", id = var.name, name = var.name, readonly = "true"), br()];
+}
+
+/*If statement questions*/
+list[HTMLElement] question2html(ifQ(AExpr condition, list[AQuestion] ifQuestions)) {
+  list[HTMLElement] combinedQuestions = [];
+  for(q <- ifQuestions) {
+    combinedQuestions += question2html(q);
+  }
+  return [fieldset(combinedQuestions)];
+}
+
+list[HTMLElement] question2html(ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions)) {
+  list[HTMLElement] combinedIfQuestions = [];
+  for(q <- ifQuestions) {
+    combinedIfQuestions += question2html(q);
+  }
+  list[HTMLElement] combinedElseQuestions = [];
+  for(q <- elseQuestions) {
+    combinedElseQuestions += question2html(q);
+  }
+  return [fieldset([fieldset(combinedIfQuestions),fieldset(combinedElseQuestions)])];
 }
 
 str form2js(AForm f) {
