@@ -5,6 +5,7 @@ import Resolve;
 import IO;
 import lang::html::AST; // see standard library
 import lang::html::IO;
+import Boolean;
 
 /*
  * Implement a compiler for QL to HTML and Javascript
@@ -24,14 +25,19 @@ void compile(AForm f) {
   writeFile(f.src[extension="html"].top, writeHTMLString(form2html(f)));
 }
 
+/**********Compile HTML**********/
 HTMLElement form2html(AForm f) {
+  list[HTMLElement] qList = [];
+  for(q <- f.questions) {
+    qList += question2html(q);
+  }
   return html([
     head([
       title([text(f.name)])
       ]),
     body([
       h2([text(f.name)]),
-      form([])
+      form(qList, onchange = "updateQL(this)")
     ])
   ]);
 }
@@ -44,8 +50,10 @@ list[HTMLElement] question2html(Q(str question, AId var, integer())) {
 
 list[HTMLElement] question2html(Q(str question, AId var, boolean())) {
   return [label([text(question)]), br(),
-          label([\text("True")]), input(\type = "radio", id = var.name, name = var.name, \value = "true"), br(),
-          label([\text("False")]), input(\type = "radio", id = var.name, name = var.name, \value = "false"), br()];
+          label([\text("True")], \for = var.name + "_true"),
+          input(\type = "radio", id = var.name + "_true", name = var.name, \value = "true"), br(),
+          label([\text("False")], \for = var.name + "_false"), 
+          input(\type = "radio", id = var.name + "_false", name = var.name, \value = "false"), br()];
 }
 
 list[HTMLElement] question2html(Q(str question, AId var, string())) {
@@ -61,8 +69,10 @@ list[HTMLElement] question2html(computedQ(str question, AId var, integer(), AExp
 
 list[HTMLElement] question2html(computedQ(str question, AId var, boolean(), AExpr e)) {
   return [label([text(question)]), br(),
-          label([\text("True")]), input(\type = "radio", id = var.name, name = var.name, \value = "true", readonly = "true"), br(),
-          label([\text("False")]), input(\type = "radio", id = var.name, name = var.name, \value = "false", readonly = "true"), br()];
+          label([\text("True")], \for = var.name + "_true"),
+          input(\type = "radio", id = var.name + "_true", name = var.name, \value = "true", readonly = "true"), br(),
+          label([\text("False")], \for = var.name + "_false"), 
+          input(\type = "radio", id = var.name + "_false", name = var.name, \value = "false", readonly = "true"), br()];
 }
 
 list[HTMLElement] question2html(computedQ(str question, AId var, string(), AExpr e)) {
@@ -76,7 +86,7 @@ list[HTMLElement] question2html(ifQ(AExpr condition, list[AQuestion] ifQuestions
   for(q <- ifQuestions) {
     combinedQuestions += question2html(q);
   }
-  return [fieldset(combinedQuestions)];
+  return [fieldset(combinedQuestions, id = "<condition>")];
 }
 
 list[HTMLElement] question2html(ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions)) {
@@ -88,9 +98,54 @@ list[HTMLElement] question2html(ifElseQ(AExpr condition, list[AQuestion] ifQuest
   for(q <- elseQuestions) {
     combinedElseQuestions += question2html(q);
   }
-  return [fieldset([fieldset(combinedIfQuestions),fieldset(combinedElseQuestions)])];
+  return [fieldset([fieldset(combinedIfQuestions, id = "<condition>_true"),fieldset(combinedElseQuestions, id =  "<condition>_false")])];
 }
 
+
+/**********Compile Javascript**********/
 str form2js(AForm f) {
+  return "";
+}
+
+str ifQ2ifStatement(ifQ(AExpr condition, _)) {
+  return "if(<expr2str(condition)>) {
+         '  document.getElementById(\"<condition>\").removeAttribute(\"disabled\");
+         '}else {
+         '   document.getElementById(\"<condition>\").setAttribute(\"disabled\", \"true\");
+         '}
+         ";
+}
+
+str ifQ2ifStatement(ifElseQ(AExpr condition, _, _)) {
+  return "if(<expr2str(condition)>) {
+         '  document.getElementById(\"<condition>_true\").removeAttribute(\"disabled\");
+         '  document.getElementById(\"<condition>_false\").setAttribute(\"disabled\", \"true\");
+         '}else {
+         '  document.getElementById(\"<condition>_true\").setAttribute(\"disabled\", \"true\");
+         '	document.getElementById(\"<condition>_false\").removeAttribute(\"disabled\");
+         '}
+         ";
+}
+
+str expr2str(AExpr e) {
+  switch(e) {
+    case parenthesis(AExpr expr): return "(" + expr2str(expr) + ")";
+    case not(AExpr expr): return "!" + expr2str(expr);
+    case mul(AExpr lhs, AExpr rhs): return expr2str(lhs) + "*" + expr2str(rhs);
+    case div(AExpr lhs, AExpr rhs): return expr2str(lhs) + "/" + expr2str(rhs);
+    case add(AExpr lhs, AExpr rhs): return expr2str(lhs) + "+" + expr2str(rhs);
+    case sub(AExpr lhs, AExpr rhs): return expr2str(lhs) + "-" + expr2str(rhs);
+    case less(AExpr lhs, AExpr rhs): return expr2str(lhs) + "\<" + expr2str(rhs);
+    case leq(AExpr lhs, AExpr rhs): return expr2str(lhs) + "\<=" + expr2str(rhs);
+    case greater(AExpr lhs, AExpr rhs): return expr2str(lhs) + "\>" + expr2str(rhs);
+    case greq(AExpr lhs, AExpr rhs): return expr2str(lhs) + "\>=" + expr2str(rhs);
+    case eq(AExpr lhs, AExpr rhs): return expr2str(lhs) + "===" + expr2str(rhs); //equal value and equal type operator
+    case neq(AExpr lhs, AExpr rhs): return expr2str(lhs) + "!=" + expr2str(rhs);
+    case and(AExpr lhs, AExpr rhs): return expr2str(lhs) + "&&" + expr2str(rhs);
+    case or(AExpr lhs, AExpr rhs): return expr2str(lhs) + "||" + expr2str(rhs);
+    case boolLit(bool b): return toString(b);
+    case intLit(int i): return "<i>";
+    case strLit(str s): return s;
+  }
   return "";
 }
