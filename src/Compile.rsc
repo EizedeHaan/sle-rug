@@ -121,14 +121,11 @@ str form2js(AForm f) {
          '  //insert vars, update computedQs
          '  let f = new FormData(form);
          '  <variableAssignments2js(f.questions)>
-         '
-         '<for(q <- f.questions) {>
-         '  <if(ifQ(_,_) := q || ifElseQ(_,_,_) := q) {>
-         '  <ifQ2js(q)>   
-         '  <}>
-         '<}>
-         '}
-         ";
+          <for(q <- f.questions) {> 
+            <if(ifQ(_,_) := q || ifElseQ(_,_,_) := q) {>
+            '  <ifQ2js(q)>   
+            <}><}>
+         '}";
 }
 
 str ifQ2js(ifQ(AExpr condition, _)) {
@@ -137,13 +134,12 @@ str ifQ2js(ifQ(AExpr condition, _)) {
          '  for(q of qs) {
          '    q.removeAttribute(\"disabled\");
          '  }
-         '}else {
+         '} else {
          '  let qs = document.getElementsByClassName(\"<"ifQ:" + expr2str(condition)>\");
          '  for(q of qs) {
          '    q.setAttribute(\"disabled\", \"true\");
          '  }
-         '}
-         ";
+         '}";
 }
 
 str ifQ2js(ifElseQ(AExpr condition, _, _)) {
@@ -156,7 +152,7 @@ str ifQ2js(ifElseQ(AExpr condition, _, _)) {
          '  for(q of qs) {
          '    q.setAttribute(\"disabled\", \"true\");
          '  }
-         '}else {
+         '} else {
          '  let qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_true">\");
          '  for(q of qs) {
          '    q.setAttribute(\"disabled\", \"true\");
@@ -165,15 +161,12 @@ str ifQ2js(ifElseQ(AExpr condition, _, _)) {
          '  for(q of qs) {
          '    q.removeAttribute(\"disabled\");
          '  }
-         '}
-         ";
+         '}";
 }
 
 str variableAssignments2js(list[AQuestion] qs) {
-  return "<for(q <- qs) {>
-         '  <if(computedQ(_,_,_,_) !:= q) {>
-              '<assignVariable2js(q)><}>
-         '<}>";
+  return "<for(q <- qs) {> <if(computedQ(_,_,_,_) !:= q) {> 
+              '<assignVariable2js(q)><}><}>";
 }
 
 str assignVariable2js(Q(_,AId var, integer())) {
