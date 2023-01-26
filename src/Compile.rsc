@@ -118,7 +118,9 @@ list[HTMLElement] question2html(ifElseQ(AExpr condition, list[AQuestion] ifQuest
 /**********Compile Javascript**********/
 str form2js(AForm f) {
   return "function updateQL(form) {
-         '  //insert vars
+         '  //insert vars, update computedQs
+         '  let f = new FormData(form);
+         '  <variableAssignments2js(f.questions)>
          '
          '<for(q <- f.questions) {>
          '  <if(ifQ(_,_) := q || ifElseQ(_,_,_) := q) {>
@@ -165,6 +167,29 @@ str ifQ2js(ifElseQ(AExpr condition, _, _)) {
          '  }
          '}
          ";
+}
+
+str variableAssignments2js(list[AQuestion] qs) {
+  return "<for(q <- qs) {>
+         '  <if(computedQ(_,_,_,_) !:= q) {>
+              '<assignVariable2js(q)><}>
+         '<}>";
+}
+
+str assignVariable2js(Q(_,AId var, integer())) {
+  return "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"var.name\") : 0);";
+}
+str assignVariable2js(Q(_,AId var, boolean())) {
+  return "let <var.name> = (f.get(\"<var.name>\") === \"true\");";
+}
+str assignVariable2js(Q(_,AId var, string())) {
+  return "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"var.name\") : \"\");";
+}
+str assignVariable2js(ifQ(_,list[AQuestion] ifQuestions)) {
+  return variableAssignments2js(ifQuestions);
+}
+str assignVariable2js(ifElseQ(_,list[AQuestion] ifQuestions, list[AQuestion] elseQuestions)) {
+  return variableAssignments2js(ifQuestions) + variableAssignments2js(elseQuestions);
 }
 
 //converts AExpr to JS expression in string form
