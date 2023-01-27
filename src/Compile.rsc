@@ -6,6 +6,7 @@ import IO;
 import lang::html::AST; // see standard library
 import lang::html::IO;
 import Boolean;
+import String;
 
 /*
  * Implement a compiler for QL to HTML and Javascript
@@ -38,7 +39,8 @@ HTMLElement form2html(AForm f) {
     body([
       h2([text(f.name)]),
       form(qList, onchange = "updateQL(this)")
-    ])
+    ]),
+    script([], src = f.src[extension="js"].file)
   ]);
 }
 
@@ -52,11 +54,9 @@ list[HTMLElement] question2html(Q(str question, AId var, integer())) {
 
 list[HTMLElement] question2html(Q(str question, AId var, boolean())) {
   return [div([
-            label([text(question)]), br(),
-            label([\text("True")], \for = var.name + "_true"),
-            input(\type = "radio", id = var.name + "_true", name = var.name, \value = "true"), br(),
-            label([\text("False")], \for = var.name + "_false"), 
-            input(\type = "radio", id = var.name + "_false", name = var.name, \value = "false"), br()
+            label([text(question)], \for = var.name), br(),
+            label([\text("True")], \for = var.name),
+            input(\type = "checkbox", id = var.name, name = var.name, \value = "true"), br()
           ])];
 }
 
@@ -77,11 +77,9 @@ list[HTMLElement] question2html(computedQ(str question, AId var, integer(), AExp
 
 list[HTMLElement] question2html(computedQ(str question, AId var, boolean(), AExpr e)) {
   return [div([
-            label([text(question)]), br(),
-            label([\text("True")], \for = var.name + "_true"),
-            input(\type = "radio", id = var.name + "_true", name = var.name, \value = "true", readonly = "true"), br(),
-            label([\text("False")], \for = var.name + "_false"), 
-            input(\type = "radio", id = var.name + "_false", name = var.name, \value = "false", readonly = "true"), br()
+            label([text(question)], \for = var.name), br(),
+            label([\text("True")], \for = var.name),
+            input(\type = "checkbox", id = var.name, name = var.name, \value = "true", readonly = "true"), br()
           ])];
 }
 
@@ -117,16 +115,95 @@ list[HTMLElement] question2html(ifElseQ(AExpr condition, list[AQuestion] ifQuest
 
 /**********Compile Javascript**********/
 str form2js(AForm f) {
-  return "function updateQL(form) {
-         '  //insert vars, update computedQs
+  //src arrEquals: https://masteringjs.io/tutorials/fundamentals/compare-arrays
+  return "function arrEquals(a,b) {
+         '  return a.length === b.length &&
+         '         a.every((val, index) =\> val === b[index]);
+         '}
+         '
+         'function updateQL(form) {
+         '  //get values from form
          '  let f = new FormData(form);
          '  <variableAssignments2js(f.questions)>
+         '  
+         '  //Recalculate values of computedQuestions
+         '  let prevComputed = [];
+         '  do {
+         '    prevComputed = <computedQs2jsArr(f.questions)>;
+         '    <evalComputedQs2js(f.questions)>      
+         '  }while(!arrEquals(<computedQs2jsArr(f.questions)>, prevComputed));
+         '
+         '  <updateFormVals2js(f.questions)>
           <for(q <- f.questions) {> 
             <if(ifQ(_,_) := q || ifElseQ(_,_,_) := q) {>
             '  <ifQ2js(q)>   
             <}><}>
          '}";
+}//TODO: update values of computedQs in html form
+
+
+str updateFormVals2js(list[AQuestion] qs) {
+  return "<for(q <- qs) {> <if(Q(_,_,_) !:= q) {>
+              '<updateFormVals2js(q)> <}><}>";
 }
+str updateFormVals2js(computedQ(_,AId var, boolean(),_)) {
+  return "if(<var.name>) {
+         '  document.getElementById(\"<var.name>\").checked = true;      
+         '}else {
+         '  document.getElementById(\"<var.name>\").checked = false;
+         }";
+}
+str updateFormVals2js(computedQ(_,AId var,_,_)) {
+  return "document.getElementById(\"<var.name>\").value = <var.name>;";
+}
+str updateFormVals2js(ifQ(_,list[AQuestion] ifQuestions)) {
+  return updateFormVals2js(ifQuestions);
+}
+str updateFormVals2js(ifElseQ(_,list[AQuestion] ifQuestions, list[AQuestion] elseQuestions)) {
+  return updateFormVals2js(ifQuestions) + updateFormVals2js(elseQuestions);
+}
+
+
+str evalComputedQs2js(list[AQuestion] qs) {
+  return "<for(q <- qs) {> <if(Q(_,_,_) !:= q) {>
+              '<evalComputedQs2js(q)> <}><}>";
+}
+str evalComputedQs2js(computedQ(_,AId var,_,AExpr e)) {
+  return "<var.name> = <expr2str(e)>;";
+}
+str evalComputedQs2js(ifQ(_,list[AQuestion] qs)) {
+  return evalComputedQs2js(qs);
+}
+str evalComputedQs2js(ifElseQ(_,ifQuestions,elseQuestions)) {
+  return evalComputedQs2js(ifQuestions) + evalComputedQs2js(elseQuestions); 
+}
+
+
+list[str] computedQsVarNames2list(list[AQuestion] qs) {
+  list[str] vars = [];
+  for(q <- qs) {
+    switch(q) {
+      case computedQ(_,AId var,_,_): vars += var.name;
+      case ifQ(_, list[AQuestion] ifQuestions): vars += computedQsVarNames2list(ifQuestions);
+      case ifElseQ(_, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions): {
+        vars += computedQsVarNames2list(ifQuestions); 
+        vars += computedQsVarNames2list(elseQuestions); 
+      }
+    }
+  }
+  return vars;
+}
+
+str computedQs2jsArr(list[AQuestion] qs) {
+  list[str] vars = computedQsVarNames2list(qs);
+  str res = "[";
+  for(v <- vars) {
+    res += v + ",";
+  }
+  res = replaceLast(res, ",", "]");
+  return res;
+}
+
 
 str ifQ2js(ifQ(AExpr condition, _)) {
   return "if(<expr2str(condition)>) {
@@ -134,7 +211,7 @@ str ifQ2js(ifQ(AExpr condition, _)) {
          '  for(q of qs) {
          '    q.removeAttribute(\"disabled\");
          '  }
-         '} else {
+         '}else {
          '  let qs = document.getElementsByClassName(\"<"ifQ:" + expr2str(condition)>\");
          '  for(q of qs) {
          '    q.setAttribute(\"disabled\", \"true\");
@@ -152,7 +229,7 @@ str ifQ2js(ifElseQ(AExpr condition, _, _)) {
          '  for(q of qs) {
          '    q.setAttribute(\"disabled\", \"true\");
          '  }
-         '} else {
+         '}else {
          '  let qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_true">\");
          '  for(q of qs) {
          '    q.setAttribute(\"disabled\", \"true\");
@@ -164,9 +241,10 @@ str ifQ2js(ifElseQ(AExpr condition, _, _)) {
          '}";
 }
 
+
 str variableAssignments2js(list[AQuestion] qs) {
-  return "<for(q <- qs) {> <if(computedQ(_,_,_,_) !:= q) {> 
-              '<assignVariable2js(q)><}><}>";
+  return "<for(q <- qs) {>
+            '<assignVariable2js(q)><}>";
 }
 
 str assignVariable2js(Q(_,AId var, integer())) {
@@ -178,12 +256,22 @@ str assignVariable2js(Q(_,AId var, boolean())) {
 str assignVariable2js(Q(_,AId var, string())) {
   return "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"var.name\") : \"\");";
 }
+str assignVariable2js(computedQ(_,AId var, integer(),_)) {
+  return "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"var.name\") : 0);";
+}
+str assignVariable2js(computedQ(_,AId var, boolean(),_)) {
+  return "let <var.name> = (f.get(\"<var.name>\") === \"true\");";
+}
+str assignVariable2js(computedQ(_,AId var, string(),_)) {
+  return "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"var.name\") : \"\");";
+}
 str assignVariable2js(ifQ(_,list[AQuestion] ifQuestions)) {
   return variableAssignments2js(ifQuestions);
 }
 str assignVariable2js(ifElseQ(_,list[AQuestion] ifQuestions, list[AQuestion] elseQuestions)) {
   return variableAssignments2js(ifQuestions) + variableAssignments2js(elseQuestions);
 }
+
 
 //converts AExpr to JS expression in string form
 str expr2str(AExpr e) {
