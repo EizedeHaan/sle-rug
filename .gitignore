@@ -4,5 +4,5 @@
 /examples/*.js
 
 target
-examples/site/tax.html
-examples/site/tax.js
+examples/site/*.html
+examples/site/*.js
