@@ -134,10 +134,7 @@ str form2js(AForm f) {
          '  }while(!arrEquals(<computedQs2jsArr(f.questions)>, prevComputed));
          '
          '  <updateFormVals2js(f.questions)>
-          <for(q <- f.questions) {> 
-            <if(ifQ(_,_) := q || ifElseQ(_,_,_) := q) {>
-            '  <ifQ2js(q)>   
-            <}><}>
+         '  <ifQ2js(f.questions)>
          '}";
 }
 
@@ -240,9 +237,15 @@ str updateFormVals2js(ifElseQ(_,list[AQuestion] ifQuestions, list[AQuestion] els
   return updateFormVals2js(ifQuestions) + updateFormVals2js(elseQuestions);
 }
 
+str ifQ2js(list[AQuestion] qs) {
+  return "<for(q <- qs) {> 
+            <if(ifQ(_,_) := q || ifElseQ(_,_,_) := q) {>
+              '<ifQ2js(q)>  <}><}>";
+}
+
 /*Disables/enables <fieldset> HTML elements based on the condition.
   The fieldset contains the questions bound by the condition.*/
-str ifQ2js(ifQ(AExpr condition, _)) {
+str ifQ2js(ifQ(AExpr condition, list[AQuestion] ifQuestions)) {
   return "if(<expr2str(condition)>) {
          '  let qs = document.getElementsByClassName(\"<"ifQ:" + expr2str(condition)>\");
          '  for(q of qs) {
@@ -253,13 +256,14 @@ str ifQ2js(ifQ(AExpr condition, _)) {
          '  for(q of qs) {
          '    q.setAttribute(\"disabled\", \"true\");
          '  }
-         '}";
+         '}"
+         + ifQ2js(ifQuestions);
 }
 
 /*Disables/enables <fieldset> HTML elements based on the condition.
   The fieldsets contain the questions bound by the condition.
   Both the ifQuestions and elseQuestions are contained in their own fieldset.*/
-str ifQ2js(ifElseQ(AExpr condition, _, _)) {
+str ifQ2js(ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions)) {
   return "if(<expr2str(condition)>) {
          '  let qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_true">\");
          '  for(q of qs) {
@@ -278,7 +282,8 @@ str ifQ2js(ifElseQ(AExpr condition, _, _)) {
          '  for(q of qs) {
          '    q.removeAttribute(\"disabled\");
          '  }
-         '}";
+         '}"
+         + ifQ2js(ifQuestions) + ifQ2js(elseQuestions);
 }
 
 
