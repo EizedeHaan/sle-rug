@@ -125,6 +125,8 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
         | <u, loc d> <- useDef, beginsBefore(x.src, d)};
     }
 
+    case parenthesis(AExpr expr): msgs += check(expr,tenv,useDef);
+
     case not(AExpr expr): {
       if (typeOf(expr,tenv,useDef) != tbool()) {
         msgs += { error("Incompatible operand: must be boolean", expr.src)};
