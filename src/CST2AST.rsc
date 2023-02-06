@@ -65,9 +65,9 @@ AExpr cst2ast(Expr e) {
 
 default AType cst2ast(Type t) {
   switch("<t>") {
-    case "integer": return integer();
-    case "boolean": return boolean();
-    case "string": return string();
+    case "integer": return integer(src=t.src);
+    case "boolean": return boolean(src=t.src);
+    case "string": return string(src=t.src);
     default: throw "Unhandled type: <t>";  
   }
 }

@@ -83,14 +83,14 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
     }
 
     case computedQ(str question, AId var, AType typ, AExpr expr): {
-      msgs += {error("Question declared with different types", var.src)
-        | <loc d, "<var>", str _, Type t2> <- tenv, d != var.src, convertAType(typ) != t2};
+      msgs += {error("Question declared with different types", cover([var.src, typ.src]))
+        | <loc d, "<var.name>", str _, Type t2> <- tenv, d != var.src, convertAType(typ) != t2};
 
       msgs += {warning("Multiple questions with the same prompt", q.src)
         | <loc d, _, question, _> <- tenv, d != var.src};
 
       msgs += {warning("Different prompts used on the same variable", q.src)
-        | <loc d, "<var>", str prompt, _> <- tenv, d != var.src, prompt != question};
+        | <loc d, "<var.name>", str prompt, _> <- tenv, d != var.src, prompt != question};
 
       msgs += {error("Expression does not match variable type.", cover([var.src, expr.src]))
         | typeOf(expr,tenv,useDef) != convertAType(typ)};
@@ -98,24 +98,17 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
     }
       
     case Q(str question, AId var, AType typ): {
-      msgs += {error("Question declared with different types", var.src)
-        | <loc d, "<var>", str _, Type t2> <- tenv, d != var.src, convertAType(typ) != t2};
+      msgs += {error("Question declared with different types", cover([var.src, typ.src]))
+        | <loc d, "<var.name>", str _, Type t2> <- tenv, d != var.src, convertAType(typ) != t2};
 
       msgs += {warning("Multiple questions with the same prompt", q.src)
         | <loc d, _, question, _> <- tenv, d != var.src};
 
       msgs += {warning("Different prompts used on the same variable", q.src)
-        | <loc d, "<var>", str prompt, _> <- tenv, d != var.src, prompt != question};
+        | <loc d, "<var.name>", str prompt, _> <- tenv, d != var.src, prompt != question};
     }
   }
 
-  // msgs += {error("Question declared with different types", d)
-  //   | <loc d, str name, str _, Type t1> <- tenv,
-  //     <loc _, name, str _, Type t2> <- tenv, t1 != t2};
-
-  // msgs += {warning("Multiple questions with the same prompt", d1)
-  //   | <loc d1, _, str q, _> <- tenv,
-  //     <loc d2, _, q, _> <- tenv, d1 != d2};
   return msgs; 
 }
 
@@ -258,7 +251,6 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
       msgs += check(lhs,tenv,useDef);
       msgs += check(rhs,tenv,useDef);
     }
-    // etc.
   }
   
   return msgs; 
