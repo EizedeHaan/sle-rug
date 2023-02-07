@@ -221,11 +221,7 @@ str updateFormVals2js(list[AQuestion] qs) {
               '<updateFormVals2js(q)> <}><}>";
 }
 str updateFormVals2js(computedQ(_,AId var, boolean(),_)) {
-  return "if(<var.name>) {
-         '  document.getElementById(\"<var.name>\").checked = true;      
-         '}else {
-         '  document.getElementById(\"<var.name>\").checked = false;
-         }";
+  return "document.getElementById(\"<var.name>\").checked = <var.name>;";
 }
 str updateFormVals2js(computedQ(_,AId var,_,_)) {
   return "document.getElementById(\"<var.name>\").value = <var.name>;";

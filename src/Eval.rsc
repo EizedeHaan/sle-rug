@@ -62,12 +62,17 @@ VEnv eval(AQuestion q, Input inp, VEnv venv) {
   switch (q) {
     case ifQ(AExpr condition, list[AQuestion] ifQuestions): {
       venv["<condition>"] = eval(condition, venv);
-      venv = evalOnce(form("",ifQuestions), inp, venv);//bit of a trick
+      if(venv["<condition>"] == vbool(true)) {
+        venv = evalOnce(form("",ifQuestions), inp, venv);//bit of a trick
+      }
     }
     case ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions): {
       venv["<condition>"] = eval(condition, venv);
-      venv = evalOnce(form("",ifQuestions), inp, venv);
-      venv = evalOnce(form("",elseQuestions), inp, venv);
+      if(venv["<condition>"] == vbool(true)) {
+        venv = evalOnce(form("",ifQuestions), inp, venv);
+      }else {
+        venv = evalOnce(form("",elseQuestions), inp, venv);
+      }
     }
     case computedQ(_, AId var, _, AExpr expr): 
       venv[var.name] = eval(expr, venv);
