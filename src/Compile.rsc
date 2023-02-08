@@ -48,7 +48,7 @@ HTMLElement form2html(AForm f) {
 list[HTMLElement] question2html(Q(str question, AId var, integer())) {
   return [div([  
             label([text(question)], \for = var.name), br(),
-            input(\type = "number", id = var.name, name = var.name), br()
+            input(\type = "number", class = var.name, name = var.name), br()
           ])];
 }
 
@@ -56,14 +56,14 @@ list[HTMLElement] question2html(Q(str question, AId var, boolean())) {
   return [div([
             label([text(question)], \for = var.name), br(),
             label([\text("True")], \for = var.name),
-            input(\type = "checkbox", id = var.name, name = var.name, \value = "true"), br()
+            input(\type = "checkbox", class = var.name, name = var.name, \value = "true"), br()
           ])];
 }
 
 list[HTMLElement] question2html(Q(str question, AId var, string())) {
   return [div([
             label([text(question)], \for = var.name), br(),
-            input(\type = "text", id = var.name, name = var.name), br()
+            input(\type = "text", class = var.name, name = var.name), br()
           ])];
 }
 
@@ -71,7 +71,7 @@ list[HTMLElement] question2html(Q(str question, AId var, string())) {
 list[HTMLElement] question2html(computedQ(str question, AId var, integer(), AExpr e)) {
   return [div([
             label([text(question)], \for = var.name), br(),
-            input(\type = "number", id = var.name, name = var.name, readonly = "true"), br()
+            input(\type = "number", class = var.name, name = var.name, readonly = "true"), br()
           ])];
 }
 
@@ -79,14 +79,14 @@ list[HTMLElement] question2html(computedQ(str question, AId var, boolean(), AExp
   return [div([
             label([text(question)], \for = var.name), br(),
             label([\text("True")], \for = var.name),
-            input(\type = "checkbox", id = var.name, name = var.name, \value = "true", readonly = "true"), br()
+            input(\type = "checkbox", class = var.name, name = var.name, \value = "true", readonly = "true"), br()
           ])];
 }
 
 list[HTMLElement] question2html(computedQ(str question, AId var, string(), AExpr e)) {
   return [div([
             label([text(question)], \for = var.name), br(),
-            input(\type = "text", id = var.name, name = var.name, readonly = "true"), br()
+            input(\type = "text", class = var.name, name = var.name, readonly = "true"), br()
           ])];
 }
 
@@ -123,16 +123,17 @@ str form2js(AForm f) {
          '
          'function updateQL(form) {
          '  //get values from form
-         '  let f = new FormData(form);
+         '  let $f = new FormData(form);
          '  <variableAssignments2js(f)>
          '  
          '  //Recalculate values of computedQuestions
          '  let $prevComputed = [];
          '  do {
          '    $prevComputed = <computedQs2jsArr(f)>;
-         '    <evalComputedQs2js(f)>      
+         '    <evalComputedQs2js(f.questions)>      
          '  }while(!arrEquals(<computedQs2jsArr(f)>, $prevComputed));
          '
+         '  //Update form
          '  <updateFormVals2js(f)>
          '  <ifQ2js(f)>
          '}";
@@ -141,19 +142,44 @@ str form2js(AForm f) {
 //Initialises variables from questions and gets values from HTML form.
 str variableAssignments2js(AForm f) {
   str assignments = "";
+  list[str] added = [];
   visit(f) {
-    case Q(_,AId var, integer()):
-      assignments += "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"<var.name>\") : 0);\n";
-    case Q(_,AId var, boolean()):
-      assignments += "let <var.name> = (f.get(\"<var.name>\") === \"true\");\n";
-    case Q(_,AId var, string()):
-      assignments += "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"<var.name>\") : \"\");\n";
-    case computedQ(_,AId var, integer(),_):
-      assignments += "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"<var.name>\") : 0);\n";
-    case computedQ(_,AId var, boolean(),_):
-      assignments += "let <var.name> = (f.get(\"<var.name>\") === \"true\");\n";
-    case computedQ(_,AId var, string(),_):
-      assignments += "let <var.name> = (f.has(\"<var.name>\") ? f.get(\"<var.name>\") : \"\");\n";
+    case Q(_,AId var, integer()): {
+      if(var.name notin added) {
+        assignments += "let <var.name> = ($f.has(\"<var.name>\") ? $f.getAll(\"<var.name>\")[$f.getAll(\"<var.name>\").length-1] : 0);\n";
+        added += var.name;
+      }
+    }
+    case Q(_,AId var, boolean()): {
+      if(var.name notin added) {
+        assignments += "let <var.name> = ($f.getAll(\"<var.name>\")[$f.getAll(\"<var.name>\").length-1] === \"true\");\n";
+        added += var.name;
+      }
+    }
+    case Q(_,AId var, string()): {
+      if(var.name notin added) {
+        assignments += "let <var.name> = ($f.has(\"<var.name>\") ? $f.getAll(\"<var.name>\")[$f.getAll(\"<var.name>\").length-1] : \"\");\n";
+        added += var.name;
+      }
+    }
+    case computedQ(_,AId var, integer(),_): {
+      if(var.name notin added) {
+        assignments += "let <var.name> = ($f.has(\"<var.name>\") ? $f.getAll(\"<var.name>\")[$f.getAll(\"<var.name>\").length-1] : 0);\n";
+        added += var.name;
+      }
+    }
+    case computedQ(_,AId var, boolean(),_): {
+      if(var.name notin added) {
+        assignments += "let <var.name> = ($f.getAll(\"<var.name>\")[$f.getAll(\"<var.name>\").length-1] === \"true\");\n";
+        added += var.name;
+      }
+    }
+    case computedQ(_,AId var, string(),_): {
+      if(var.name notin added) {
+        assignments += "let <var.name> = ($f.has(\"<var.name>\") ? $f.getAll(\"<var.name>\")[$f.getAll(\"<var.name>\").length-1] : \"\");\n";
+        added += var.name;
+      }
+    }
   }
   return assignments;
 }
@@ -185,16 +211,45 @@ str evalComputedQs2js(AForm f) {
   return evals;
 }
 
+str evalComputedQs2js(list[AQuestion] qs) {
+  str evals = "";
+  for(q <- qs) {
+    switch(q) {
+      case computedQ(_,AId var,_,AExpr e): 
+        evals += "<var.name> = <expr2str(e)>;\n";
+      case ifQ(AExpr condition, list[AQuestion] ifQuestions): {
+        evals += "if(<expr2str(condition)>) {
+                 '  <evalComputedQs2js(ifQuestions)>
+                 '}\n";
+      }
+      case ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions): {
+        evals += "if(<expr2str(condition)>) {
+                 '  <evalComputedQs2js(ifQuestions)>
+                 '}else {
+                 '  <evalComputedQs2js(elseQuestions)>
+                 '}\n";
+      }
+    }
+  }
+  return evals;
+}
 
-/*Creates line(s) for each computed question in the HTML form,
+
+/*Creates lines for each computed question in the HTML form,
   in order to update its value.*/
 str updateFormVals2js(AForm f) {
-  str lines = "";
+  str lines = "let $qs;\n";
   visit(f) {
     case computedQ(_,AId var, boolean(),_):
-      lines += "document.getElementById(\"<var.name>\").checked = <var.name>;\n";
+      lines += "$qs = document.getElementsByClassName(\"<var.name>\");
+               'for($q of $qs) {
+               '  $q.checked = <var.name>;  
+               '}\n";
     case computedQ(_,AId var,_,_):
-      lines += "document.getElementById(\"<var.name>\").value = <var.name>;\n";
+      lines += "$qs = document.getElementsByClassName(\"<var.name>\");
+               'for($q of $qs) {
+               '  $q.value = <var.name>;  
+               '}\n";
   }
   return lines;
 }
@@ -215,14 +270,14 @@ str ifQ2js(AForm f) {
   The fieldset contains the questions bound by the condition.*/
 str ifQ2js(ifQ(AExpr condition, list[AQuestion] ifQuestions)) {
   return "if(<expr2str(condition)>) {
-         '  let qs = document.getElementsByClassName(\"<"ifQ:" + expr2str(condition)>\");
-         '  for(q of qs) {
-         '    q.removeAttribute(\"disabled\");
+         '  let $qs = document.getElementsByClassName(\"<"ifQ:" + expr2str(condition)>\");
+         '  for($q of $qs) {
+         '    $q.removeAttribute(\"disabled\");
          '  }
          '}else {
-         '  let qs = document.getElementsByClassName(\"<"ifQ:" + expr2str(condition)>\");
-         '  for(q of qs) {
-         '    q.setAttribute(\"disabled\", \"true\");
+         '  let $qs = document.getElementsByClassName(\"<"ifQ:" + expr2str(condition)>\");
+         '  for($q of $qs) {
+         '    $q.setAttribute(\"disabled\", \"true\");
          '  }
          '}";
 }
@@ -232,22 +287,22 @@ str ifQ2js(ifQ(AExpr condition, list[AQuestion] ifQuestions)) {
   Both the ifQuestions and elseQuestions are contained in their own fieldset.*/
 str ifQ2js(ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions)) {
   return "if(<expr2str(condition)>) {
-         '  let qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_true">\");
-         '  for(q of qs) {
-         '    q.removeAttribute(\"disabled\");
+         '  let $qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_true">\");
+         '  for($q of $qs) {
+         '    $q.removeAttribute(\"disabled\");
          '  }
-         '  qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_false">\");
-         '  for(q of qs) {
-         '    q.setAttribute(\"disabled\", \"true\");
+         '  $qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_false">\");
+         '  for($q of $qs) {
+         '    $q.setAttribute(\"disabled\", \"true\");
          '  }
          '}else {
-         '  let qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_true">\");
-         '  for(q of qs) {
-         '    q.setAttribute(\"disabled\", \"true\");
+         '  let $qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_true">\");
+         '  for($q of $qs) {
+         '    $q.setAttribute(\"disabled\", \"true\");
          '  }
-         '  qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_false">\");
-         '  for(q of qs) {
-         '    q.removeAttribute(\"disabled\");
+         '  $qs = document.getElementsByClassName(\"<"ifElseQ:"+expr2str(condition)+"_false">\");
+         '  for($q of $qs) {
+         '    $q.removeAttribute(\"disabled\");
          '  }
          '}";
 }
