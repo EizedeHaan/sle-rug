@@ -192,6 +192,9 @@ str computedQs2jsArr(AForm f) {
   for(/computedQ(_,AId var,_,_) := f) {
     vars += var.name;
   }
+  if(vars == []) {
+    return "[]";
+  }
   str res = "[";
   for(v <- vars) {
     res += v + ",";
