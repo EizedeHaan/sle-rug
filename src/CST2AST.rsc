@@ -3,6 +3,9 @@ module CST2AST
 import Syntax;
 import AST;
 
+import String;
+import Boolean;
+import Location;
 import ParseTree;
 
 /*
@@ -17,22 +20,58 @@ import ParseTree;
 
 AForm cst2ast(start[Form] sf) {
   Form f = sf.top; // remove layout before and after form
-  return form("", [ ], src=f.src); 
+  return form("<f.name>", [ cst2ast(q) | q <- f.questions ], src=f.src);
+}
+
+AQuestion cst2ast(q:(Question)`if ( <Expr condition> ) { <Question* ifQuestions> } else { <Question* elseQuestions> }`) {
+  return ifElseQ(cst2ast(condition), [cst2ast(qi) | qi <- ifQuestions], [cst2ast(qi) | qi <- elseQuestions], src=q.src);
+}
+
+AQuestion cst2ast(q:(Question)`if ( <Expr condition> ) { <Question* ifQuestions> }`) {
+  return ifQ(cst2ast(condition), [cst2ast(qi) | qi <- ifQuestions], src=q.src);
+}
+
+AQuestion cst2ast(q:(Question)`<Str question> <Id var> : <Type resType> = <Expr computation>`) {
+  return computedQ("<question>", cst2ast(var), cst2ast(resType), cst2ast(computation), src=q.src);
 }
 
 default AQuestion cst2ast(Question q) {
-  throw "Not yet implemented <q>";
+  return Q("<q.question>", cst2ast(q.var), cst2ast(q.resType), src=q.src);
 }
 
 AExpr cst2ast(Expr e) {
   switch (e) {
-    case (Expr)`<Id x>`: return ref(id("<x>", src=x.src), src=x.src);
-    // etc.
-    
+    case (Expr)`( <Expr expr> )`: return parenthesis(cst2ast(expr), src=expr.src);
+    case (Expr)`! <Expr expr>`: return not(cst2ast(expr), src=expr.src);
+    case (Expr)`<Expr lhs> * <Expr rhs>`: return mul(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> / <Expr rhs>`: return div(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> + <Expr rhs>`: return add(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> - <Expr rhs>`: return sub(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> \< <Expr rhs>`: return less(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> \<= <Expr rhs>`: return leq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> \> <Expr rhs>`: return greater(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> \>= <Expr rhs>`: return greq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> == <Expr rhs>`: return eq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> != <Expr rhs>`: return neq(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> && <Expr rhs>`: return and(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Expr lhs> || <Expr rhs>`: return or(cst2ast(lhs), cst2ast(rhs), src=cover([lhs.src,rhs.src]));
+    case (Expr)`<Bool b>`: return boolLit(fromString("<b>"), src=b.src);
+    case (Expr)`<Int i>`: return intLit(toInt("<i>"), src=i.src);
+    case (Expr)`<Str s>`: return strLit("<s>", src=s.src);
+    case (Expr)`<Id x>`: return ref(cst2ast(x), src=x.src);
     default: throw "Unhandled expression: <e>";
   }
 }
 
 default AType cst2ast(Type t) {
-  throw "Not yet implemented <t>";
+  switch("<t>") {
+    case "integer": return integer(src=t.src);
+    case "boolean": return boolean(src=t.src);
+    case "string": return string(src=t.src);
+    default: throw "Unhandled type: <t>";  
+  }
+}
+
+default AId cst2ast(Id x) {
+  return id("<x>", src=x.src);
 }

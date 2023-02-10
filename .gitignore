@@ -4,3 +4,5 @@
 /examples/*.js
 
 target
+examples/site/*.html
+examples/site/*.js
