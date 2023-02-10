@@ -56,14 +56,12 @@ VEnv evalOnce(AForm f, Input inp, VEnv venv) {
 
 VEnv eval(AQuestion q, Input inp, VEnv venv) {
   // evaluate conditions for branching,
-    //ifQ
-    //ifElseQ
   // evaluate inp and computed questions to return updated VEnv
   switch (q) {
     case ifQ(AExpr condition, list[AQuestion] ifQuestions): {
       venv["<condition>"] = eval(condition, venv);
       if(venv["<condition>"] == vbool(true)) {
-        venv = evalOnce(form("",ifQuestions), inp, venv);//bit of a trick
+        venv = evalOnce(form("",ifQuestions), inp, venv);
       }
     }
     case ifElseQ(AExpr condition, list[AQuestion] ifQuestions, list[AQuestion] elseQuestions): {

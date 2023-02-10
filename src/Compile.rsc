@@ -201,16 +201,9 @@ str computedQs2jsArr(AForm f) {
 }
 
 
-/*Creates a line for each computed question,
-  as to recalculate the value for the variable of the computed question.*/
-str evalComputedQs2js(AForm f) {
-  str evals = "";
-  for(/computedQ(_,AId var,_,AExpr e) := f) {
-    evals += "<var.name> = <expr2str(e)>;\n";
-  }
-  return evals;
-}
-
+/*Implements the recalculation of the values for the variables of the computed questions,
+  if they are enabled. If a variable should be recalculated depends
+  on the conditions in if and if/else statements.*/
 str evalComputedQs2js(list[AQuestion] qs) {
   str evals = "";
   for(q <- qs) {
@@ -236,7 +229,7 @@ str evalComputedQs2js(list[AQuestion] qs) {
 
 
 /*Creates lines for each computed question in the HTML form,
-  in order to update its value.*/
+  in order to update its variables over all questions.*/
 str updateFormVals2js(AForm f) {
   str lines = "let $qs;\n";
   visit(f) {
